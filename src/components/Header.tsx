@@ -1,61 +1,81 @@
-import { Link } from "react-router-dom";
-import { Search, ShoppingCart, Heart, User, Menu } from "lucide-react";
+import { Heart, ShoppingCart, Search, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useState } from "react";
 
 export const Header = () => {
-  const [cartCount] = useState(3);
-  const [wishlistCount] = useState(5);
+  const { totalItems } = useCart();
+  const { items: wishlistItems } = useWishlist();
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-50 bg-card shadow-md">
-      <div className="container mx-auto px-4">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between py-4">
+    <header className="sticky top-0 z-50 bg-card border-b shadow-sm">
+      {/* Top Bar */}
+      <div className="bg-primary text-white py-2">
+        <div className="container mx-auto px-4 text-center text-sm">
+          ✨ Free Shipping on Orders Over $50 | 🎁 New Arrivals Every Week!
+        </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center gap-4">
           {/* Logo */}
           <Link to="/">
             <motion.div
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
-                <span className="text-2xl font-bold text-white">🧸</span>
+              <div className="text-3xl">🧸</div>
+              <div className="hidden md:block">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  ToyLand
+                </h1>
+                <p className="text-xs text-muted-foreground">Where Fun Begins!</p>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hidden sm:block">
-                ToyLand
-              </span>
             </motion.div>
           </Link>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-2xl mx-4 hidden md:block">
+          <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-4">
             <div className="relative">
               <Input
-                type="search"
                 placeholder="Search for toys, games, and more..."
-                className="pl-4 pr-12 py-6 rounded-full border-2 border-border focus:border-primary transition-colors"
+                className="rounded-full pr-12 border-2"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Button
+                type="submit"
                 size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary-dark"
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full h-8 w-8"
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </form>
 
-          {/* Action Icons */}
+          {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <Link to="/wishlist">
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button variant="ghost" size="icon" className="relative rounded-full">
-                  <Heart className="h-6 w-6" />
-                  {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {wishlistCount}
+                  <Heart className="h-5 w-5" />
+                  {wishlistItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {wishlistItems.length}
                     </span>
                   )}
                 </Button>
@@ -65,10 +85,10 @@ export const Header = () => {
             <Link to="/cart">
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button variant="ghost" size="icon" className="relative rounded-full">
-                  <ShoppingCart className="h-6 w-6" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-accent text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartCount}
+                  <ShoppingCart className="h-5 w-5" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {totalItems}
                     </span>
                   )}
                 </Button>
@@ -78,47 +98,33 @@ export const Header = () => {
             <Link to="/account">
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="h-6 w-6" />
+                  <User className="h-5 w-5" />
                 </Button>
               </motion.div>
             </Link>
-
-            <Button variant="ghost" size="icon" className="md:hidden rounded-full">
-              <Menu className="h-6 w-6" />
-            </Button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile Search */}
-        <div className="pb-4 md:hidden">
-          <div className="relative">
-            <Input
-              type="search"
-              placeholder="Search toys..."
-              className="pl-4 pr-12 py-5 rounded-full border-2"
-            />
-            <Button
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Categories */}
-        <nav className="hidden md:flex items-center gap-6 pb-4 overflow-x-auto">
-          {["Action Figures", "Dolls", "Board Games", "LEGO", "Educational", "Outdoor"].map((category) => (
-            <Link key={category} to={`/category/${category.toLowerCase().replace(" ", "-")}`}>
-              <motion.span
-                whileHover={{ scale: 1.05, color: "hsl(var(--primary))" }}
-                className="text-sm font-medium whitespace-nowrap cursor-pointer transition-colors"
-              >
-                {category}
-              </motion.span>
+      {/* Categories */}
+      <div className="border-t bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-6 py-3 overflow-x-auto">
+            <Link to="/categories">
+              <Button variant="ghost" size="sm" className="whitespace-nowrap">
+                <Menu className="h-4 w-4 mr-2" />
+                All Categories
+              </Button>
             </Link>
-          ))}
-        </nav>
+            {["Action Figures", "Building Blocks", "Educational", "Plush Toys", "Board Games"].map((cat) => (
+              <Link key={cat} to={`/categories?cat=${cat}`}>
+                <Button variant="ghost" size="sm" className="whitespace-nowrap hover:text-primary">
+                  {cat}
+                </Button>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     </header>
   );

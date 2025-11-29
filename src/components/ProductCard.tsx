@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 interface ProductCardProps {
   id: number;
@@ -24,12 +26,24 @@ export const ProductCard = ({
   reviews,
   image,
 }: ProductCardProps) => {
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [isAdded, setIsAdded] = useState(false);
 
+  const isWishlisted = isInWishlist(id);
+
   const handleAddToCart = () => {
+    addToCart({ id, name, price, image });
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 1000);
+  };
+
+  const handleToggleWishlist = () => {
+    if (isWishlisted) {
+      removeFromWishlist(id);
+    } else {
+      addToWishlist({ id, name, price, originalPrice, rating, reviews, image });
+    }
   };
 
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
@@ -105,7 +119,7 @@ export const ProductCard = ({
               whileTap={{ scale: 0.9 }}
             >
               <Button
-                onClick={() => setIsWishlisted(!isWishlisted)}
+                onClick={handleToggleWishlist}
                 variant="outline"
                 size="icon"
                 className={`rounded-full border-2 ${
