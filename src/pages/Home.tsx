@@ -4,21 +4,26 @@ import { MobileNav } from "@/components/MobileNav";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Gift, Truck } from "lucide-react";
-
-// Mock product data
-const products = [
-  { id: 1, name: "Super Hero Action Figure Deluxe Set", price: 29.99, originalPrice: 39.99, rating: 4.8, reviews: 234, image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=400&fit=crop" },
-  { id: 2, name: "Princess Castle Playset with Lights", price: 49.99, originalPrice: 69.99, rating: 4.9, reviews: 189, image: "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=400&h=400&fit=crop" },
-  { id: 3, name: "Remote Control Racing Car Pro", price: 39.99, rating: 4.7, reviews: 456, image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop" },
-  { id: 4, name: "LEGO Space Station Building Kit", price: 59.99, originalPrice: 79.99, rating: 5.0, reviews: 678, image: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&h=400&fit=crop" },
-  { id: 5, name: "Educational Science Lab Set", price: 34.99, rating: 4.6, reviews: 123, image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop" },
-  { id: 6, name: "Plush Teddy Bear Giant Size", price: 44.99, originalPrice: 54.99, rating: 4.9, reviews: 892, image: "https://images.unsplash.com/photo-1551817958-20c0ac1f7229?w=400&h=400&fit=crop" },
-  { id: 7, name: "Board Game Family Fun Edition", price: 24.99, rating: 4.5, reviews: 334, image: "https://images.unsplash.com/photo-1632501641765-e568d28b0015?w=400&h=400&fit=crop" },
-  { id: 8, name: "Art & Craft Mega Supplies Set", price: 32.99, rating: 4.8, reviews: 267, image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&h=400&fit=crop" },
-];
+import { ArrowRight, Sparkles, Gift, Truck, TrendingUp } from "lucide-react";
+import { products } from "@/data/products";
+import { useSearchParams, Link } from "react-router-dom";
+import { useMemo } from "react";
 
 const Home = () => {
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery) return products;
+    return products.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+
+  const bestSellers = products.filter((p) => p.isBestSeller);
+  const offerProducts = products.filter((p) => p.originalPrice);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -48,13 +53,17 @@ const Home = () => {
                   Discover amazing toys, games, and endless fun for kids of all ages. Where imagination comes to life!
                 </p>
                 <div className="flex gap-4 justify-center md:justify-start">
-                  <Button size="lg" className="rounded-full bg-primary hover:bg-primary-dark shadow-lg">
-                    Shop Now
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                  <Button size="lg" variant="outline" className="rounded-full border-2">
-                    View Deals
-                  </Button>
+                  <Link to="/#products">
+                    <Button size="lg" className="rounded-full bg-primary hover:bg-primary-dark shadow-lg">
+                      Shop Now
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <Link to="/#offers">
+                    <Button size="lg" variant="outline" className="rounded-full border-2">
+                      View Deals
+                    </Button>
+                  </Link>
                 </div>
               </motion.div>
 
@@ -104,43 +113,134 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Featured Products */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-10"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold mb-3">
-                🌟 Featured Toys
+        {/* Search Results */}
+        {searchQuery && (
+          <section className="py-8 bg-muted/30">
+            <div className="container mx-auto px-4">
+              <h2 className="text-2xl font-bold mb-6">
+                Search Results for "{searchQuery}"
               </h2>
-              <p className="text-muted-foreground">Handpicked favorites kids absolutely love!</p>
-            </motion.div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {products.map((product, idx) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <ProductCard {...product} />
-                </motion.div>
-              ))}
+              {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                  {filteredProducts.map((product) => (
+                    <ProductCard key={product.id} {...product} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-12">
+                  No products found. Try a different search term!
+                </p>
+              )}
             </div>
+          </section>
+        )}
 
-            <div className="text-center mt-10">
-              <Button size="lg" variant="outline" className="rounded-full border-2">
-                View All Products
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+        {/* Best Sellers */}
+        {!searchQuery && (
+          <section className="py-12" id="bestsellers">
+            <div className="container mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-center mb-10"
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/10 rounded-full mb-4">
+                  <TrendingUp className="h-5 w-5 text-secondary" />
+                  <span className="font-semibold text-secondary">Best Sellers</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-3">
+                  ⭐ Top Picks This Month
+                </h2>
+                <p className="text-muted-foreground">Most loved toys flying off our shelves!</p>
+              </motion.div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {bestSellers.map((product, idx) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <ProductCard {...product} />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* Special Offers */}
+        {!searchQuery && (
+          <section className="py-12 bg-gradient-to-br from-accent/10 to-primary/10" id="offers">
+            <div className="container mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-center mb-10"
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/20 rounded-full mb-4">
+                  <Gift className="h-5 w-5 text-accent" />
+                  <span className="font-semibold text-accent">Limited Time</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-3">
+                  🔥 Amazing Offers
+                </h2>
+                <p className="text-muted-foreground">Don't miss out on these incredible deals!</p>
+              </motion.div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {offerProducts.map((product, idx) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <ProductCard {...product} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Featured Products */}
+        {!searchQuery && (
+          <section className="py-12" id="products">
+            <div className="container mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-center mb-10"
+              >
+                <h2 className="text-3xl md:text-4xl font-bold mb-3">
+                  🌟 All Toys
+                </h2>
+                <p className="text-muted-foreground">Explore our complete collection!</p>
+              </motion.div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {products.map((product, idx) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <ProductCard {...product} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />

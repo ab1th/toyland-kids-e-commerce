@@ -8,27 +8,23 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { CreditCard, Lock, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { useCart } from "@/contexts/CartContext";
+import { useNavigate } from "react-router-dom";
 
 const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { items, totalPrice, clearCart } = useCart();
+  const navigate = useNavigate();
+
+  const shipping = totalPrice > 50 ? 0 : 5.99;
+  const finalTotal = totalPrice + shipping;
 
   const handlePayment = () => {
     setIsProcessing(true);
     setTimeout(() => {
-      alert("Payment successful! 🎉");
-      setIsProcessing(false);
+      clearCart();
+      navigate("/order-success");
     }, 2000);
-  };
-
-  const orderSummary = {
-    items: [
-      { name: "Super Hero Action Figure", price: 29.99, qty: 2 },
-      { name: "Princess Castle Playset", price: 49.99, qty: 1 },
-      { name: "LEGO Space Station", price: 59.99, qty: 1 },
-    ],
-    subtotal: 169.96,
-    shipping: 0,
-    total: 169.96,
   };
 
   return (
@@ -143,13 +139,13 @@ const Checkout = () => {
                 <h2 className="text-xl font-bold mb-6">Order Summary</h2>
 
                 <div className="space-y-4 mb-6">
-                  {orderSummary.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        {item.name} x{item.qty}
+                        {item.name} x{item.quantity}
                       </span>
                       <span className="font-semibold">
-                        ${(item.price * item.qty).toFixed(2)}
+                        ${(item.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   ))}
@@ -158,16 +154,22 @@ const Checkout = () => {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-semibold">
-                        ${orderSummary.subtotal.toFixed(2)}
+                        ${totalPrice.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Shipping</span>
-                      <span className="font-semibold text-success">FREE</span>
+                      <span className="font-semibold">
+                        {shipping === 0 ? (
+                          <span className="text-success">FREE</span>
+                        ) : (
+                          `$${shipping.toFixed(2)}`
+                        )}
+                      </span>
                     </div>
                     <div className="border-t pt-4 flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span className="text-primary">${orderSummary.total.toFixed(2)}</span>
+                      <span className="text-primary">${finalTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
