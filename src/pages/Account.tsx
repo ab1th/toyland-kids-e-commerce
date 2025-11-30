@@ -12,6 +12,13 @@ import { useState } from "react";
 
 const Account = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "John Doe",
+    email: "parent@email.com",
+    phone: "+1 234 567 8900",
+    dob: "01/01/1990"
+  });
 
   if (!isLoggedIn) {
     return (
@@ -151,29 +158,61 @@ const Account = () => {
               <Card className="p-8">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">Profile Information</h2>
-                  <Button variant="outline" className="rounded-full">
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </Button>
+                  {!isEditing ? (
+                    <Button variant="outline" className="rounded-full" onClick={() => setIsEditing(true)}>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="rounded-full" onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </Button>
+                      <Button className="rounded-full" onClick={() => setIsEditing(false)}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <Label>Full Name</Label>
-                      <Input defaultValue="John Doe" className="rounded-xl" />
+                      <Input 
+                        value={profileData.name} 
+                        onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                        disabled={!isEditing}
+                        className="rounded-xl" 
+                      />
                     </div>
                     <div>
                       <Label>Email</Label>
-                      <Input defaultValue="parent@email.com" type="email" className="rounded-xl" />
+                      <Input 
+                        value={profileData.email} 
+                        onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                        disabled={!isEditing}
+                        type="email" 
+                        className="rounded-xl" 
+                      />
                     </div>
                     <div>
                       <Label>Phone Number</Label>
-                      <Input defaultValue="+1 234 567 8900" className="rounded-xl" />
+                      <Input 
+                        value={profileData.phone} 
+                        onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                        disabled={!isEditing}
+                        className="rounded-xl" 
+                      />
                     </div>
                     <div>
                       <Label>Date of Birth</Label>
-                      <Input defaultValue="01/01/1990" className="rounded-xl" />
+                      <Input 
+                        value={profileData.dob} 
+                        onChange={(e) => setProfileData({...profileData, dob: e.target.value})}
+                        disabled={!isEditing}
+                        className="rounded-xl" 
+                      />
                     </div>
                   </div>
 
