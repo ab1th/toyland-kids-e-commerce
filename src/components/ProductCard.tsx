@@ -7,15 +7,9 @@ import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 
-interface ProductCardProps {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  rating: number;
-  reviews: number;
-  image: string;
-}
+import { Product } from "@/data/products";
+
+interface ProductCardProps extends Omit<Product, 'category' | 'description' | 'isBestSeller'> {}
 
 export const ProductCard = ({
   id,

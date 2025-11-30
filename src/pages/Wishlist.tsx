@@ -5,16 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { X, ShoppingCart, Heart } from "lucide-react";
+import { useWishlist } from "@/contexts/WishlistContext";
+import { useCart } from "@/contexts/CartContext";
 
-const wishlistItems = [
-  { id: 1, name: "Princess Castle Playset with Lights", price: 49.99, image: "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=200&h=200&fit=crop" },
-  { id: 2, name: "LEGO Space Station Building Kit", price: 59.99, image: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=200&h=200&fit=crop" },
-  { id: 3, name: "Plush Teddy Bear Giant Size", price: 44.99, image: "https://images.unsplash.com/photo-1551817958-20c0ac1f7229?w=200&h=200&fit=crop" },
-  { id: 4, name: "Remote Control Racing Car Pro", price: 39.99, image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop" },
-  { id: 5, name: "Educational Science Lab Set", price: 34.99, image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&h=200&fit=crop" },
-];
 
 const Wishlist = () => {
+  const { items, removeFromWishlist } = useWishlist();
+  const { addToCart } = useCart();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -31,11 +29,11 @@ const Wishlist = () => {
               <h1 className="text-3xl font-bold">My Wishlist</h1>
             </div>
             <p className="text-muted-foreground">
-              {wishlistItems.length} items saved for later
+              {items.length} items saved for later
             </p>
           </motion.div>
 
-          {wishlistItems.length === 0 ? (
+          {items.length === 0 ? (
             <Card className="p-12 text-center">
               <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">Your wishlist is empty</h2>
@@ -46,7 +44,7 @@ const Wishlist = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {wishlistItems.map((item, idx) => (
+              {items.map((item, idx) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -69,6 +67,7 @@ const Wishlist = () => {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
+                            onClick={() => removeFromWishlist(item.id)}
                             className="text-muted-foreground hover:text-destructive flex-shrink-0"
                           >
                             <X className="h-5 w-5" />
@@ -78,7 +77,14 @@ const Wishlist = () => {
                         <p className="text-xl font-bold text-primary mb-3">${item.price}</p>
 
                         <motion.div whileTap={{ scale: 0.95 }}>
-                          <Button size="sm" className="w-full rounded-full bg-primary hover:bg-primary-dark">
+                          <Button 
+                            size="sm" 
+                            className="w-full rounded-full bg-primary hover:bg-primary-dark"
+                            onClick={() => {
+                              addToCart({ id: item.id, name: item.name, price: item.price, image: item.image });
+                              removeFromWishlist(item.id);
+                            }}
+                          >
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             Move to Cart
                           </Button>
