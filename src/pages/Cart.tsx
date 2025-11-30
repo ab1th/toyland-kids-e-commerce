@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { X, Plus, Minus, ShoppingCart, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { BackButton } from "@/components/BackButton";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([
@@ -40,6 +41,7 @@ const Cart = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-8">
+          <BackButton />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

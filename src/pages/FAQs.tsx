@@ -8,6 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { BackButton } from "@/components/BackButton";
 
 const faqs = [
   {
@@ -51,6 +52,7 @@ const FAQs = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-12">
+          <BackButton />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

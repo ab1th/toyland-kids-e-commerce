@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { CreditCard, Lock, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+import { BackButton } from "@/components/BackButton";
 import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 
@@ -33,6 +34,7 @@ const Checkout = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-8">
+          <BackButton />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

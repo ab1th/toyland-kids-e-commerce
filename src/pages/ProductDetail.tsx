@@ -8,34 +8,71 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { Heart, ShoppingCart, Star, Truck, Shield, RotateCcw, MessageSquare } from "lucide-react";
 import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
+import { products } from "@/data/products";
+import { toast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BackButton } from "@/components/BackButton";
 
 const ProductDetail = () => {
+  const { id } = useParams();
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewData, setReviewData] = useState({ name: "", rating: 5, comment: "" });
+  const [submittedReviews, setSubmittedReviews] = useState<Array<{name: string; rating: number; comment: string}>>([]);
 
+  const productData = products.find(p => p.id === Number(id)) || products[0];
+  
   const product = {
-    name: "Super Hero Action Figure Deluxe Set",
-    price: 29.99,
-    originalPrice: 39.99,
-    rating: 4.8,
-    reviews: 234,
+    ...productData,
     images: [
-      "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=600&fit=crop",
+      productData.image,
       "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop",
       "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&h=600&fit=crop",
     ],
-    description: "Unleash your child's imagination with this amazing Super Hero Action Figure Deluxe Set! Features articulated joints, interchangeable accessories, and premium quality materials. Perfect for ages 4 and up.",
     features: [
       "Premium quality construction",
-      "Multiple points of articulation",
-      "Includes 5 interchangeable accessories",
       "Safe, non-toxic materials",
-      "Ages 4+",
+      "Educational and fun",
+      "Perfect gift for kids",
+      "Ages 3+",
     ],
   };
 
-  const [selectedImage, setSelectedImage] = useState(0);
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const isWishlisted = isInWishlist(product.id);
+  const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      addToCart({ id: product.id, name: product.name, price: product.price, image: product.image });
+    }
+  };
+
+  const handleToggleWishlist = () => {
+    if (isWishlisted) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
+  };
+
+  const handleSubmitReview = () => {
+    if (!reviewData.name.trim() || !reviewData.comment.trim()) {
+      toast({ title: "Please fill in all fields", variant: "destructive" });
+      return;
+    }
+    setSubmittedReviews([...submittedReviews, reviewData]);
+    toast({ title: "Review submitted!", description: "Thank you for your feedback!" });
+    setReviewData({ name: "", rating: 5, comment: "" });
+    setShowReviewForm(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,6 +80,7 @@ const ProductDetail = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-8">
+          <BackButton />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Image Gallery */}
             <div className="space-y-4">
@@ -132,7 +170,11 @@ const ProductDetail = () => {
 
                 <div className="flex gap-3">
                   <motion.div whileTap={{ scale: 0.95 }} className="flex-1">
-                    <Button size="lg" className="w-full rounded-full bg-primary hover:bg-primary-dark">
+                    <Button 
+                      size="lg" 
+                      className="w-full rounded-full bg-primary hover:bg-primary-dark"
+                      onClick={handleAddToCart}
+                    >
                       <ShoppingCart className="mr-2 h-5 w-5" />
                       Add to Cart
                     </Button>
@@ -145,7 +187,7 @@ const ProductDetail = () => {
                       className={`rounded-full border-2 ${
                         isWishlisted ? "bg-accent border-accent text-white" : ""
                       }`}
-                      onClick={() => setIsWishlisted(!isWishlisted)}
+                      onClick={handleToggleWishlist}
                     >
                       <Heart className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`} />
                     </Button>
@@ -187,13 +229,96 @@ const ProductDetail = () => {
             <Card className="p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">Customer Reviews</h2>
-                <Button className="rounded-full">
+                <Button 
+                  className="rounded-full"
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                >
                   <MessageSquare className="mr-2 h-4 w-4" />
-                  Write a Review
+                  {showReviewForm ? "Cancel" : "Write a Review"}
                 </Button>
               </div>
 
+              {showReviewForm && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-8 p-6 rounded-xl bg-muted/50 space-y-4"
+                >
+                  <h3 className="font-bold">Share Your Experience</h3>
+                  <div>
+                    <Label>Your Name</Label>
+                    <Input
+                      value={reviewData.name}
+                      onChange={(e) => setReviewData({...reviewData, name: e.target.value})}
+                      placeholder="Enter your name"
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <Label>Rating</Label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setReviewData({...reviewData, rating: star})}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`h-8 w-8 ${
+                              star <= reviewData.rating
+                                ? "fill-secondary text-secondary"
+                                : "fill-muted text-muted"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Your Review</Label>
+                    <Textarea
+                      value={reviewData.comment}
+                      onChange={(e) => setReviewData({...reviewData, comment: e.target.value})}
+                      placeholder="Tell us what you think..."
+                      className="rounded-xl min-h-32"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleSubmitReview}
+                    className="w-full rounded-full"
+                  >
+                    Submit Review
+                  </Button>
+                </motion.div>
+              )}
+
               <div className="space-y-6">
+                {submittedReviews.map((review, idx) => (
+                  <div key={`submitted-${idx}`} className="border-b pb-6 last:border-0">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
+                        {review.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{review.name}</p>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`h-4 w-4 ${
+                                i < review.rating 
+                                  ? "fill-secondary text-secondary" 
+                                  : "fill-muted text-muted"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground">{review.comment}</p>
+                  </div>
+                ))}
+                
                 {[1, 2, 3].map((idx) => (
                   <div key={idx} className="border-b pb-6 last:border-0">
                     <div className="flex items-center gap-3 mb-3">

@@ -4,6 +4,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { RefreshCw, Package, CheckCircle, XCircle } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 
 const Returns = () => {
   return (
@@ -12,6 +13,7 @@ const Returns = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-12">
+          <BackButton />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
