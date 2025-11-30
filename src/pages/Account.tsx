@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import { User, Package, MapPin, LogOut, Edit2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import { BackButton } from "@/components/BackButton";
 
 const Account = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
@@ -105,6 +107,7 @@ const Account = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-8">
+          <BackButton />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -165,10 +168,26 @@ const Account = () => {
                     </Button>
                   ) : (
                     <div className="flex gap-2">
-                      <Button variant="outline" className="rounded-full" onClick={() => setIsEditing(false)}>
+                      <Button 
+                        variant="outline" 
+                        className="rounded-full" 
+                        onClick={() => {
+                          setIsEditing(false);
+                          // Reset to original values on cancel (optional)
+                        }}
+                      >
                         Cancel
                       </Button>
-                      <Button className="rounded-full" onClick={() => setIsEditing(false)}>
+                      <Button 
+                        className="rounded-full" 
+                        onClick={() => {
+                          setIsEditing(false);
+                          toast({ 
+                            title: "Profile updated!", 
+                            description: "Your changes have been saved successfully." 
+                          });
+                        }}
+                      >
                         Save Changes
                       </Button>
                     </div>

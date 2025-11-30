@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { X, ShoppingCart, Heart } from "lucide-react";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
+import { BackButton } from "@/components/BackButton";
 
 
 const Wishlist = () => {
@@ -19,6 +20,7 @@ const Wishlist = () => {
 
       <main className="flex-1 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-8">
+          <BackButton />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
