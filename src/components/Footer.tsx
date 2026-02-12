@@ -22,7 +22,7 @@ export const Footer = () => {
               {["About Us", "Contact", "FAQs", "Shipping Info", "Returns"].map((item) => (
                 <li key={item}>
                   <Link
-                    to={`/${item.toLowerCase().replace(" ", "-")}`}
+                    to={`/${item.toLowerCase().replace(/ /g, "-")}`}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     {item}
@@ -39,7 +39,7 @@ export const Footer = () => {
               {["Action Figures", "Dolls", "Board Games", "LEGO", "Educational"].map((item) => (
                 <li key={item}>
                   <Link
-                    to={`/category/${item.toLowerCase().replace(" ", "-")}`}
+                    to={`/category/${item.toLowerCase().replace(/ /g, "-")}`}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     {item}
@@ -76,7 +76,7 @@ export const Footer = () => {
 
         <div className="mt-8 pt-8 border-t text-center">
           <p className="text-sm text-muted-foreground">
-            © 2025 ToyLand. All rights reserved. Made with ❤️ for kids everywhere.
+            © {new Date().getFullYear()} ToyLand. All rights reserved. Made with ❤️ for kids everywhere.
           </p>
         </div>
       </div>

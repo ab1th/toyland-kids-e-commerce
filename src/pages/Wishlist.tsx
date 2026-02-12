@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { X, ShoppingCart, Heart } from "lucide-react";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { BackButton } from "@/components/BackButton";
 
@@ -42,7 +43,9 @@ const Wishlist = () => {
               <p className="text-muted-foreground mb-6">
                 Start adding your favorite toys to your wishlist!
               </p>
-              <Button className="rounded-full">Start Shopping</Button>
+              <Link to="/">
+                <Button className="rounded-full">Start Shopping</Button>
+              </Link>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

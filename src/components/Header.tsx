@@ -117,7 +117,7 @@ export const Header = () => {
               </Button>
             </Link>
             {["Action Figures", "Building Blocks", "Educational", "Plush Toys", "Board Games"].map((cat) => (
-              <Link key={cat} to={`/category/${cat.toLowerCase().replace(" ", "-")}`}>
+              <Link key={cat} to={`/category/${cat.toLowerCase().replace(/ /g, "-")}`}>
                 <Button variant="ghost" size="sm" className="whitespace-nowrap hover:text-primary">
                   {cat}
                 </Button>

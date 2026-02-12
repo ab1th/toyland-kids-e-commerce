@@ -39,7 +39,7 @@ const Contact = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             {[
               { icon: Mail, title: "Email", info: "support@toyland.com" },
               { icon: Phone, title: "Phone", info: "+1 (800) TOY-LAND" },
