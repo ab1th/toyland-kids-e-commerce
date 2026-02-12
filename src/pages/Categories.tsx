@@ -42,7 +42,7 @@ const Categories = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
               >
-                <Link to={`/category/${category.name.toLowerCase().replace(" ", "-")}`}>
+                <Link to={`/category/${category.name.toLowerCase().replace(/ /g, "-")}`}>
                   <Card className="group overflow-hidden hover:shadow-xl transition-all cursor-pointer border-2 hover:border-primary">
                     <div className={`h-32 bg-gradient-to-br ${category.color} flex items-center justify-center`}>
                       <span className="text-6xl group-hover:scale-110 transition-transform">

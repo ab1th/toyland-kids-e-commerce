@@ -116,7 +116,7 @@ const ProductDetail = () => {
             {/* Product Info */}
             <div className="space-y-6">
               <div>
-                <Badge className="mb-3 bg-accent text-white">{discount}% OFF - Limited Time!</Badge>
+                {discount > 0 && <Badge className="mb-3 bg-accent text-white">{discount}% OFF - Limited Time!</Badge>}
                 <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
 
                 <div className="flex items-center gap-3 mb-4">
@@ -139,9 +139,11 @@ const ProductDetail = () => {
 
                 <div className="flex items-baseline gap-3 mb-6">
                   <span className="text-4xl font-bold text-primary">${product.price}</span>
-                  <span className="text-xl text-muted-foreground line-through">
-                    ${product.originalPrice}
-                  </span>
+                  {product.originalPrice && (
+                    <span className="text-xl text-muted-foreground line-through">
+                      ${product.originalPrice}
+                    </span>
+                  )}
                 </div>
 
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
