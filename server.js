@@ -30,9 +30,22 @@ try {
     const recentToLoad = parsed.slice(-2000);
     recentLogs.push(...recentToLoad);
     console.log(`✅ Loaded ${recentLogs.length} existing logs into memory cache`);
+  } else {
+    console.warn('logs.json not found, starting with empty cache');
   }
 } catch (err) {
   console.warn('Could not load logs.json into cache on startup:', err.message);
+}
+
+// Ensure cache has some demo data for Vercel
+if (recentLogs.length === 0) {
+  const now = new Date().toISOString();
+  recentLogs.push(
+    { timestamp: now, ip: '::1', method: 'GET', url: '/logs', severity: 'LOW', threat_level: 'none' },
+    { timestamp: now, ip: '192.168.1.1', method: 'GET', url: '/', severity: 'LOW', threat_level: 'none' },
+    { timestamp: now, ip: '10.0.0.5', method: 'POST', url: '/api/logs', severity: 'MEDIUM', threat_level: 'low' }
+  );
+  console.log('✅ Initialized with demo logs for testing');
 }
 
 
