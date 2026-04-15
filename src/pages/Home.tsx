@@ -53,17 +53,22 @@ const Home = () => {
                   Discover amazing toys, games, and endless fun for kids of all ages. Where imagination comes to life!
                 </p>
                 <div className="flex gap-4 justify-center md:justify-start">
-                  <Link to="/#products">
-                    <Button size="lg" className="rounded-full bg-primary hover:bg-primary-dark shadow-lg">
-                      Shop Now
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link to="/#offers">
-                    <Button size="lg" variant="outline" className="rounded-full border-2">
-                      View Deals
-                    </Button>
-                  </Link>
+                  <Button
+                    size="lg"
+                    className="rounded-full bg-primary hover:bg-primary-dark shadow-lg"
+                    onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    Shop Now
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="rounded-full border-2"
+                    onClick={() => document.getElementById("offers")?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    View Deals
+                  </Button>
                 </div>
               </motion.div>
 

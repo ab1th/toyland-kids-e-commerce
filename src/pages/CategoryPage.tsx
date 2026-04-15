@@ -9,11 +9,11 @@ import { BackButton } from "@/components/BackButton";
 
 const CategoryPage = () => {
   const { category } = useParams();
-  const categoryName = category?.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase()) || "All";
+  const categoryName = category?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "All";
   
   const filteredProducts = category === "all-categories" 
     ? products 
-    : products.filter(p => p.category.toLowerCase().replace(" ", "-") === category);
+    : products.filter(p => p.category.toLowerCase().replace(/ /g, "-") === category);
 
   return (
     <div className="min-h-screen flex flex-col">
