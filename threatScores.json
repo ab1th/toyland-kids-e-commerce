@@ -1,0 +1,12 @@
+{
+  "::1": {
+    "score": 4296,
+    "threat_level": "MALICIOUS",
+    "last_seen": "2026-04-15T08:58:36.996Z"
+  },
+  "2409:40f4:5:302a:f431:a130:32d1:9b32": {
+    "score": 4,
+    "threat_level": "NORMAL",
+    "last_seen": "2026-03-11T06:40:31.143Z"
+  }
+}

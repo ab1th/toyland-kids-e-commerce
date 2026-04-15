@@ -132,4 +132,6 @@ export const ProductCard = ({
       </Card>
     </motion.div>
   );
-};
+};   
+
+
