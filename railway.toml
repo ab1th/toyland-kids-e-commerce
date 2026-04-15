@@ -5,4 +5,5 @@ builder = "nixpacks"
 packages = ["nodejs"]
 
 [deploy]
-startCommand = "npm install && npm run build && npm start"
+buildCommand = "npm install && npm run build"
+startCommand = "npm start"
