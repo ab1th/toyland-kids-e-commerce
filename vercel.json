@@ -1,15 +1,12 @@
 {
   "version": 2,
+  "buildCommand": "npm install && npm run build",
   "builds": [
     {
       "src": "server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
+      "use": "@vercel/node",
       "config": {
-        "distDir": "dist"
+        "maxLambdaSize": "50mb"
       }
     }
   ],
@@ -18,9 +15,5 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "PORT": "3000"
-  }
+  ]
 }

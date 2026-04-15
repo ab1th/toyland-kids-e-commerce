@@ -577,4 +577,10 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+// Export for Vercel serverless
+export default app;
+
+// Start server locally (not in Vercel serverless)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+}
