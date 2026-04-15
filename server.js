@@ -11,10 +11,56 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// --- SIMPLE SESSION STORE (in-memory) ---
+const sessions = {}; // { sessionId: { userId, timestamp, ip } }
+
+function createSession(userId, ip) {
+  const sessionId = Math.random().toString(36).substr(2, 20) + Date.now().toString(36);
+  sessions[sessionId] = { userId, timestamp: Date.now(), ip };
+  // Clean up old sessions (older than 24 hours)
+  Object.keys(sessions).forEach(id => {
+    if (Date.now() - sessions[id].timestamp > 86400000) delete sessions[id];
+  });
+  return sessionId;
+}
+
+function getSession(sessionId) {
+  const session = sessions[sessionId];
+  return session && Date.now() - session.timestamp < 86400000 ? session : null;
+}
+
 // --- MANDATORY MIDDLEWARE ORDER ---
 app.use(logTraffic);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// --- SIMPLE COOKIE PARSER ---
+app.use((req, res, next) => {
+  const cookies = {};
+  if (req.headers.cookie) {
+    req.headers.cookie.split(';').forEach(cookie => {
+      const [name, value] = cookie.trim().split('=');
+      if (name && value) cookies[name] = decodeURIComponent(value);
+    });
+  }
+  req.cookies = cookies;
+  
+  // Override res.cookie to work without cookie-parser
+  res.cookie = function(name, value, options = {}) {
+    let cookieStr = \`\${name}=\${encodeURIComponent(value)}\`;
+    if (options.maxAge) cookieStr += \`; Max-Age=\${Math.floor(options.maxAge / 1000)}\`;
+    if (options.httpOnly) cookieStr += '; HttpOnly';
+    if (options.sameSite) cookieStr += \`; SameSite=\${options.sameSite}\`;
+    res.setHeader('Set-Cookie', cookieStr);
+  };
+  
+  // Override res.clearCookie
+  res.clearCookie = function(name) {
+    res.setHeader('Set-Cookie', \`\${name}=; Max-Age=0; HttpOnly\`);
+  };
+  
+  next();
+});
 
 // --- INITIALIZE IN-MEMORY LOG CACHE ---
 const logPath = path.join(__dirname, 'logs.json');
@@ -94,15 +140,16 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // --- LAYER 3: DECEPTION ADMIN TRAP ---
 // Single GET /admin (professional fake login page)
 app.get('/admin', (req, res) => {
+  const error = req.query.error ? decodeURIComponent(req.query.error) : '';
   res.setHeader('Content-Type', 'text/html');
-  res.send(`<!doctype html>
+  res.send(\`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Admin Login</title>
   <style>
-    :root{--bg:#0f172a;--panel:#111827;--muted:#94a3b8;--accent:#3b82f6}
+    :root{--bg:#0f172a;--panel:#111827;--muted:#94a3b8;--accent:#3b82f6;--error:#ef4444}
     html,body{height:100%;margin:0;background:var(--bg);color:#e6eef8;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
     .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
     .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.25));border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 30px rgba(2,6,23,0.7);padding:28px;border-radius:12px;max-width:420px;width:100%}
@@ -110,17 +157,20 @@ app.get('/admin', (req, res) => {
     label{display:block;margin-bottom:6px;font-size:13px;color:var(--muted)}
     input{width:100%;padding:12px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:#071026;color:#fff;font-size:15px;margin-bottom:16px;box-sizing:border-box}
     input:focus{outline:none;box-shadow:0 0 0 4px rgba(59,130,246,0.12)}
-    button{width:100%;padding:12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+    button{width:100%;padding:12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;transition:background 0.2s}
+    button:hover{background:#2563eb}
     .meta{margin-top:12px;text-align:center;color:#9aa6b2;font-size:13px}
+    .error{background:rgba(239,68,68,0.1);border:1px solid var(--error);color:var(--error);padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px;text-align:center}
     @media (max-width:480px){.card{padding:18px}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <form class="card" method="POST" action="/admin-login">
-      <h1>Admin Login</h1>
+      <h1>🔒 Admin Panel</h1>
+      \${error ? '<div class="error">❌ ' + error + '</div>' : ''}
       <label for="username">Username</label>
-      <input id="username" name="username" type="text" autocomplete="username" required />
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus />
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" required />
       <button type="submit">Login</button>
@@ -128,7 +178,7 @@ app.get('/admin', (req, res) => {
     </form>
   </div>
 </body>
-</html>`);
+</html>\`);
 });
 
 // Single POST /admin-login (append credentials to logs.json)
@@ -138,6 +188,7 @@ app.post('/admin-login', (req, res) => {
   const xff = req.headers['x-forwarded-for'];
   const ip = xff ? String(xff).split(',')[0].trim() : (req.ip || req.socket?.remoteAddress || '');
 
+  // Log attempt
   const entry = {
     type: 'credential_attempt',
     username,
@@ -152,8 +203,20 @@ app.post('/admin-login', (req, res) => {
     if (err) console.error('Failed to append credential log:', err);
   });
 
-  res.setHeader('Content-Type', 'text/plain');
-  res.status(401).send('Login failed. Invalid credentials.');
+  // Check credentials (admin / naanbatman)
+  if (username === 'admin' && password === 'naanbatman') {
+    // Valid login - create session
+    const sessionId = createSession('admin', ip);
+    res.cookie('admin_session', sessionId, {
+      httpOnly: true,
+      maxAge: 86400000, // 24 hours
+      sameSite: 'lax'
+    });
+    return res.redirect('/admin/panel');
+  } else {
+    // Invalid login - redirect back with error
+    return res.redirect('/admin?error=Invalid+credentials');
+  }
 });
 
 // --- Deception routes (placed BEFORE SPA fallback) ---
@@ -183,6 +246,366 @@ app.get(/^.*\.env.*$/i, (req, res) => {
   ].join('\n') + '\n';
   res.setHeader('Content-Type', 'text/plain');
   res.status(200).send(fakeEnv);
+});
+
+// --- AUTHENTICATION MIDDLEWARE ---
+function isAuthenticated(req, res, next) {
+  const sessionId = req.cookies?.admin_session;
+  if (sessionId && getSession(sessionId)) {
+    return next();
+  }
+  return res.redirect('/admin');
+}
+
+// --- ADMIN PANEL - UNIFIED DASHBOARD WITH LOGS ---
+app.get('/admin/panel', isAuthenticated, (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Panel — SIEM Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #0f1724;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --text: #e6eef8;
+      --muted: #94a3b8;
+      --border: rgba(255,255,255,0.04);
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --orange: #ffb020;
+      --red: #ef4444;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .container { max-width: 1400px; margin: 0 auto; }
+    
+    header {
+      background: linear-gradient(180deg, rgba(79,70,229,0.1), rgba(0,0,0,0.3));
+      border-bottom: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    h1 { font-size: 24px; font-weight: 700; }
+    
+    .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .user-info {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    
+    button {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    
+    button:hover { background: var(--accent-hover); }
+    
+    .logout-btn {
+      background: #dc2626;
+    }
+    
+    .logout-btn:hover { background: #b91c1c; }
+    
+    .main-content { padding: 20px; }
+    
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .tab {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover { color: var(--text); }
+    
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .panel {
+      background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(0,0,0,0.2));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: rgba(79,70,229,0.1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--accent); margin-top: 8px; }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 13px;
+    }
+    
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-weight: 600; color: var(--muted); }
+    
+    tr:hover { background: rgba(255,255,255,0.01); }
+    
+    .search-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      width: 100%;
+      max-width: 300px;
+    }
+    
+    .refresh-info {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    
+    .severity-low { color: var(--green); }
+    .severity-medium { color: var(--yellow); }
+    .severity-high { color: var(--orange); }
+    .severity-critical { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <h1>🔒 Admin Control Panel</h1>
+      <div class="header-right">
+        <div class="user-info">Logged in as: <strong>admin</strong></div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-content container">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+      <button class="tab" onclick="switchTab('logs')">📋 Logs</button>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="dashboard" class="tab-content active">
+      <div class="panel">
+        <h2 style="margin-bottom: 20px;">Traffic Summary</h2>
+        <div class="stats" id="statsContainer">
+          <div class="stat-card">
+            <div class="stat-label">Total Requests</div>
+            <div class="stat-value" id="statTotal">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">High Severity</div>
+            <div class="stat-value" id="statHigh">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Critical</div>
+            <div class="stat-value" id="statCritical">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Unique IPs</div>
+            <div class="stat-value" id="statIPs">0</div>
+          </div>
+        </div>
+        
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Recent Activity (Last 10)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>IP</th>
+              <th>Method</th>
+              <th>URL</th>
+              <th>Severity</th>
+            </tr>
+          </thead>
+          <tbody id="dashboardTable">
+            <tr><td colspan="5" style="text-align: center; color: var(--muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+        
+        <div class="refresh-info">🔄 Auto-updating every 3 seconds | Last update: <span id="dashLastUpdate">-</span></div>
+      </div>
+    </div>
+
+    <!-- LOGS TAB -->
+    <div id="logs" class="tab-content">
+      <div class="panel">
+        <h2 style="margin-bottom: 16px;">Request Logs</h2>
+        <input type="text" id="searchBox" class="search-box" placeholder="Search by IP, method, URL, severity..." />
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>IP Address</th>
+              <th>Method</th>
+              <th>URL</th>
+              <th>Severity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="logsTable">
+            <tr><td colspan="6" style="text-align: center; color: var(--muted);">Loading logs...</td></tr>
+          </tbody>
+        </table>
+        
+        <div class="refresh-info">
+          Total: <strong id="totalCount">0</strong> | 
+          Displayed: <strong id="displayedCount">0</strong> |
+          🔄 Auto-updating every 3 seconds | 
+          Last update: <span id="logsLastUpdate">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allLogs = [];
+    
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      document.querySelector(\`button[onclick="switchTab('\${tabName}')"]\`).classList.add('active');
+    }
+    
+    async function fetchLogs() {
+      try {
+        const res = await fetch('/api/logs?limit=2000', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to fetch logs');
+        allLogs = await res.json() || [];
+        updateDashboard();
+        updateLogs();
+        return allLogs;
+      } catch (err) {
+        console.error('Error fetching logs:', err);
+        return [];
+      }
+    }
+    
+    function updateDashboard() {
+      const logs = allLogs;
+      const stats = {
+        total: logs.length,
+        high: logs.filter(l => l.severity === 'HIGH').length,
+        critical: logs.filter(l => l.severity === 'CRITICAL').length,
+        ips: new Set(logs.map(l => l.ip)).size
+      };
+      
+      document.getElementById('statTotal').textContent = stats.total;
+      document.getElementById('statHigh').textContent = stats.high;
+      document.getElementById('statCritical').textContent = stats.critical;
+      document.getElementById('statIPs').textContent = stats.ips;
+      
+      const tbody = document.getElementById('dashboardTable');
+      tbody.innerHTML = logs.slice(-10).reverse().map(log => \`
+        <tr>
+          <td style="font-size: 12px;">\${new Date(log.timestamp).toLocaleTimeString()}</td>
+          <td><code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">\${log.ip}</code></td>
+          <td><strong>\${log.method}</strong></td>
+          <td style="font-size: 12px;">\${log.url}</td>
+          <td><span class="severity-\${String(log.severity || 'unknown').toLowerCase()}">\${log.severity || 'UNKNOWN'}</span></td>
+        </tr>
+      \`).join('');
+      
+      document.getElementById('dashLastUpdate').textContent = new Date().toLocaleTimeString();
+    }
+    
+    function updateLogs() {
+      const query = (document.getElementById('searchBox')?.value || '').toLowerCase().trim();
+      const filtered = allLogs.filter(log => {
+        const searchStr = (log.timestamp + ' ' + log.ip + ' ' + log.method + ' ' + log.url + ' ' + (log.severity || '')).toLowerCase();
+        return !query || searchStr.includes(query);
+      });
+      
+      const tbody = document.getElementById('logsTable');
+      tbody.innerHTML = filtered.reverse().map(log => \`
+        <tr>
+          <td style="font-size: 12px;">\${new Date(log.timestamp).toLocaleTimeString()}</td>
+          <td><code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">\${log.ip}</code></td>
+          <td><strong>\${log.method}</strong></td>
+          <td style="font-size: 12px;">\${log.url}</td>
+          <td><span class="severity-\${String(log.severity || 'unknown').toLowerCase()}">\${log.severity || 'UNKNOWN'}</span></td>
+          <td>\${log.status || 'N/A'}</td>
+        </tr>
+      \`).join('') || '<tr><td colspan="6" style="text-align: center; color: var(--muted);">No logs match your search</td></tr>';
+      
+      document.getElementById('totalCount').textContent = allLogs.length;
+      document.getElementById('displayedCount').textContent = filtered.length;
+      document.getElementById('logsLastUpdate').textContent = new Date().toLocaleTimeString();
+    }
+    
+    document.getElementById('searchBox')?.addEventListener('input', updateLogs);
+    
+    // Initial load and auto-refresh every 3 seconds
+    fetchLogs();
+    setInterval(fetchLogs, 3000);
+  </script>
+</body>
+</html>\`);
+});
+
+// --- LOGOUT ENDPOINT ---
+app.get('/api/admin/logout', (req, res) => {
+  const sessionId = req.cookies?.admin_session;
+  if (sessionId) delete sessions[sessionId];
+  res.clearCookie('admin_session');
+  res.redirect('/admin');
 });
 
 // --- SIEM-style dashboard & API routes (placed BEFORE SPA fallback) ---
